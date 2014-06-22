@@ -1,0 +1,71 @@
+---
+title: "Analysis Report for Prediction of the Quality of Wieght Lifting Exercises "
+author: "Sushant"
+date: "22 June 2014"
+output: html_document
+---
+
+This study is conducted on the data about personal activity by means of wearable devices such as Jawbone Up, Nike FuelBand, and Fitbit. The data is borrowed from the research project - 'Human Activity Recognition' conducted by 'groupware.les'.
+
+The Weight Lifting Data was collected on weight lifting enthusiasts who performed various exercises based on pre-defined specifications and certain variations. The data collected was then labelled into following five categories:
+
+* Class A - Exercise performed 100% according to the specified specifications.
+* Class B - Throwing the elbows to the front.
+* Class C - Lifting the dumbbell only halfway.
+* Class D - Lowering the dumbbell only halfway
+* Class E - Throwing the hips to the front.
+
+### Pre Process
+The first few columns of the data set (shown below) records the user name, time stamp and hence been excluded from analysis. 
+```{r cache=TRUE, echo=FALSE}
+data <- read.csv('data/pml-training.csv')
+names(data)[2:6]
+```
+Then the columns with NAs were removed along with the features that had zero variance. Prediction model is built on the resultant features (shown below).
+```{r cache=TRUE, echo=FALSE}
+    a <- library(caret)
+    data <- data[,-c(1:7)]
+    checkNa <- function(list){
+        sum(is.na(list)) > 1
+    }
+    features <- names(data)
+    Nas <- t(sapply(data, checkNa))
+    data <- data[,!Nas]
+    
+    nsv <- nearZeroVar(data)
+    data <- data[,-nsv]   
+    names(data)
+```
+
+### Data Analysis
+The data set contains approximately 20k instances, which a quite a big number. Therefore, 50% split is chosen for seperating estimation of out of sample error. A logistic regression model was fit on train data with bootstrap sampling. The density plot of the model's top four important features for predicting 'Class A' density plot is shown below.
+```{r echo=FALSE}
+    library(png)
+    library(grid)
+    img <- readPNG('feature_density_plot.png')
+    grid.raster(img)
+```
+As can be seen in the above plot the distribution of features have multiple peaks and there exists a significant ovelap of various classes. With such a distribution logistic regression model would not give better results as verified by the results of the model on remaining 50% test data (see below confusion matrix), the accuracy of the model is found to be 70%.
+
+```{r, echo=FALSE}
+    library(png)
+    library(grid)
+    img <- readPNG('cm_logistic_regression.png')
+    grid.raster(img)
+```
+
+Therefore, random forests is used to fit a model with same 50% split training data and 500 random trees. Though the model takes more time to build but the accuracy improves to 99%. See below confusion matrix.
+```{r, echo=FALSE}
+    library(png)
+    library(grid)
+    img <- readPNG('cm_random_forest.png')
+    grid.raster(img)
+```
+
+### Summary
+The expected out of sample error is expected to be **30%** for logistic regression model while **1%** for random forest model. Given the significant improvement of result 'random forests', it is concluded that random forests suits best for predicting the quality of weight lifting exercise.
+
+### Reference
+Ugulino, W.; Cardador, D.; Vega, K.; Velloso, E.; Milidiu, R.; Fuks, H. Wearable Computing: Accelerometers' Data Classification of Body Postures and Movements. Proceedings of 21st Brazilian Symposium on Artificial Intelligence. Advances in Artificial Intelligence - SBIA 2012. In: Lecture Notes in Computer Science. , pp. 52-61. Curitiba, PR: Springer Berlin / Heidelberg, 2012. ISBN 978-3-642-34458-9. DOI: 10.1007/978-3-642-34459-6_6.
+
+Read more: http://groupware.les.inf.puc-rio.br/har#ixzz35KzA6iO1
